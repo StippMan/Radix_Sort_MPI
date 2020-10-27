@@ -7,9 +7,6 @@
 #include <sys/time.h>
 #include <time.h>
 #include <math.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/time.h>
 
 #define DIGITS 10 // the number of digits in base 10
 
