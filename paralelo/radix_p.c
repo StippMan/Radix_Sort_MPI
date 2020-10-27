@@ -7,29 +7,29 @@ int num_elements;
 
 int main(int argc, char** argv) {
 
-	// int opt;
-	// while ((opt = getopt(argc, argv, "n:d:t:f:")) != -1) {
-	// 	switch (opt) {
-	// 	case 'n':
-	// 	num_elements = strtoul(optarg, NULL, 0);
-	// 	break;
-	// 	case 'd':
-	// 	dimensions = strtoul(optarg, NULL, 0);
-	// 	break;
-	// 	case 't':
-	// 	num_threads = strtoul(optarg, NULL, 0);
-	// 	break;
-	// 	case 'f':
-	// 	input_filename = optarg;
-	// 	break;
-	// 	default:
-	// 	fprintf(stderr,
-	// 			"Modo de usar: %s [-n numero de elemento][-d numero de "
-	// 			"dimensoes][-t numero de threads][-f nome do arquivo de entrada] ...\n",
-	// 			argv[0]);
-	// 	exit(EXIT_FAILURE);
-	// 	}
-	// }
+	int opt;
+	while ((opt = getopt(argc, argv, "n:d:t:f:")) != -1) {
+		switch (opt) {
+		case 'n':
+		num_elements = strtoul(optarg, NULL, 0);
+		break;
+		case 'd':
+		dimensions = strtoul(optarg, NULL, 0);
+		break;
+		case 't':
+		num_threads = strtoul(optarg, NULL, 0);
+		break;
+		case 'f':
+		input_filename = optarg;
+		break;
+		default:
+		fprintf(stderr,
+				"Modo de usar: %s [-n numero de elemento][-d numero de "
+				"dimensoes][-t numero de threads][-f nome do arquivo de entrada] ...\n",
+				argv[0]);
+		exit(EXIT_FAILURE);
+		}
+	}
 
 	// Initialize the MPI environment
 	MPI_Init(NULL, NULL);
