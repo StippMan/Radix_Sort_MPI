@@ -33,30 +33,35 @@ typedef struct
 // 	return EXIT_SUCCESS;
 // }
 
-struct timeval begin, end;
+void counting_sort(int local_array[], int count_return[], int n_elements, int max_value){
 
-int position(int *array, int eff_size)
-{
-	int i, minpos = 0;
-	
-	for(i=0; i<eff_size; i++)
-		minpos = array[i] > array[minpos] ? i: minpos;
-	return minpos;
-}
+	int output[n_elements];
+	int* count_array = calloc(max_value+1, sizeof(int));
 
-void sort(int *array, int n){
-
-	int eff_size, minpos;
-	int tmp;
-	
-	for(eff_size = n; eff_size > 1; eff_size--) {
-		minpos = position(array, eff_size);
-		tmp = array[minpos];
-		array[minpos] = array[eff_size-1];
-		array[eff_size-1] = tmp;
+	for (int i = 0; i < max_value+1; i++)
+	{
+		++count_array[local_array[i]]; 
 	}
+	count_return[0] = count_array[0];
+	for (int i = 1; i <= max_value; i++)
+	{
+		count_array[i] += count_array[i-1];
+		count_return[i] = count_array[i];
+	}
+
+	for (int i = 0; i < max_value+1; i++)
+	{
+		output[count_array[local_array[i]]-1] = local_array[i];
+		--count_array[local_array[i]];
+	}
+
+	for (int i = 0; i < max_value+1; ++i) 
+		local_array[i] = output[i]; 
+
 }
 
+
+struct timeval begin, end;
 
 int main(int argc, char *argv[])
 {
@@ -113,12 +118,21 @@ int main(int argc, char *argv[])
 	
 
 	int* local_array = malloc(elements_per_rank*sizeof(int));
+	int* count_array = malloc(elements_per_rank*sizeof(int));
+		
 	MPI_Scatter(array, elements_per_rank, MPI_INT, local_array, elements_per_rank, MPI_INT, 0, MPI_COMM_WORLD);
-
-	sort(local_array, elements_per_rank);
 	
-	MPI_Gather(local_array, elements_per_rank, MPI_INT, array, elements_per_rank, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	// MPI_Gather(local_array, elements_per_rank, MPI_INT, array, elements_per_rank, MPI_INT, 0, MPI_COMM_WORLD);
 
+	int n_bits_per_iteration = log2(num_processes);
+	int n_iterations = 32/n_bits_per_iteration;
+	for (int i = 0; i < n_iterations; i++)
+	{
+
+		counting_sort(local_array, count_array, elements_per_rank, max_value);
+
+	}
 	if(process_rank == 0){
 		
 		for (int i = 0; i < num_elements; i++)
@@ -130,7 +144,6 @@ int main(int argc, char *argv[])
 	// gettimeofday(&begin, 0);
 
 	// int i = 0b01010101000010010101010100001001;
-	// int mask = 0b11 << 2;
 	// int masked_i = i & mask;
 
 
