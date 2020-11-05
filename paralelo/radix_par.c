@@ -21,6 +21,10 @@
 #define g 2		   // group of bits for each scan
 #define N b / g	   // number of passes
 #define B (1 << g) // number of buckets, 2^g
+// MPI tags constants, offset by max bucket to avoid collisions
+#define COUNTS_TAG_NUM B + 1
+#define PRINT_TAG_NUM COUNTS_TAG_NUM + 1
+#define NUM_TAG PRINT_TAG_NUM + 1
 
 uint32_t num_elements;
 FILE *input_file;
@@ -109,7 +113,7 @@ int radix_counting_sort(array unsorted, uint32_t rank, uint32_t world_size)
 
 	uint32_t stackmem[B];
 	array counting_array = {B, stackmem};
-	uint32_t mask = 0b11, offset = 0;
+	uint32_t mask = 0b11, offset = 0; // mask n vai ser 2 bits se o num de proc n for 4, alterar
 	uint32_t allCounts[B][world_size];
 	uint32_t l_B = B / world_size;
 	MPI_Request req;
@@ -142,73 +146,80 @@ int radix_counting_sort(array unsorted, uint32_t rank, uint32_t world_size)
 		MPI_Request req;
 		MPI_Status stat;
 
-		for (int i = 0; i < world_size; i++)
+		for (int rank_to_send_to = 0; rank_to_send_to < world_size; rank_to_send_to++)
 		{
 			int start, end;
 
-			if(i == 0){
+			if(rank_to_send_to == 0){
 				start = 0;
 			}else{
-				start = counting_array.data[i-1];
-			}
+				start = counting_array.data[rank_to_send_to-1];
+			}			
+			end = counting_array.data[rank_to_send_to];
 
-			if(i == world_size-1){
-				end = unsorted.count;
-			}else{
-				end = counting_array.data[i];
-			}
+			// if(rank_to_send_to == world_size-1){
+			// 	end = unsorted.count;
+			// }else{
+			// 	end = counting_array.data[rank_to_send_to];
+			// }
 
-			if (i != rank)
-			{
-				uint32_t *to_send = malloc(counting_array.data[i] * sizeof(uint32_t));
-				int c = 0;
-				for (int j = start; j < end; j++)
-				{
-					to_send[c] = scratch.data[j];
-					c++;
-				}
+			// if (rank_to_send_to != rank)
+			// {
+			// 	uint32_t *to_send = malloc((end-start) * sizeof(uint32_t));
+			// 	int c = 0;
+			// 	for (int j = start; j < end; j++)
+			// 	{
+			// 		to_send[c] = scratch.data[j];
+			// 		c++;
+			// 	}
 				
-				MPI_Isend(to_send,counting_array.data[i],MPI_INTEGER,i,rank,MPI_COMM_WORLD,&req);
+				// MPI_Send(&to_send,(end-start),MPI_INT,rank_to_send_to,rank,MPI_COMM_WORLD);
 				
-			}
+			// }
 			
 		}
 
-		for (int i = 0; i < world_size; i++)
-		{
-			int start, end;
+		// int p_sum_start, p_sum_end = p_sum[rank];
+		// if (rank == 0){
+		// 	p_sum_start = 0;
+		// }else{
+		// 	p_sum_start = p_sum[rank-1];
+		// }
+		
+		// uint32_t* local_p = malloc((p_sum_end - p_sum_start) * sizeof(uint32_t));
 
-			if(i == 0){
-				start = 0;
-			}else{
-				start = counting_array.data[i-1];
-			}
-
-			if(i == world_size-1){
-				end = unsorted.count;
-			}else{
-				end = counting_array.data[i];
-			}
-
-			int c = 0;
-			for (int j = start; j < end; j++)
-			{
-				local_p[c] = scratch.data[j];
-				c++;
-			}
-
-
-			if (i != rank)
-			{
-				
-				MPI_Irecv(&local_p[start],counting_array.data[i],MPI_INTEGER,i,i,MPI_COMM_WORLD,&req);
-				
-			}
-
-			// usar allCounts
+		// for (int rank_to_receive = 0; rank_to_receive < world_size; rank_to_receive++){
 			
-		}
-		uint32_t* local_p = malloc(p_sum[rank] * sizeof(uint32_t));
+		// 	int start, end;
+
+		// 	if(rank_to_receive == 0){
+		// 		start = 0;
+		// 	}else{
+		// 		start = allCounts[rank][rank_to_receive-1];
+		// 	}
+
+		// 	end = allCounts[rank][rank_to_receive];
+		// 	// if(rank_to_receive == world_size-1){
+		// 	// 	end = unsorted.count;
+		// 	// }else{
+		// 	// 	end = allCounts[rank][rank_to_receive];
+		// 	// }
+
+
+		// 	if (rank_to_receive == rank)
+		// 	{
+
+		// 		// MPI_Irecv(&local_p[start],end-start,MPI_INTEGER,rank_to_receive,rank_to_receive,MPI_COMM_WORLD,&req);
+				
+		// 	}
+		// }
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		// for (int i = 0; i < p_sum[rank]; i++)
+		// {
+		// 	printf("%u ", local_p[i]);
+		// }
+		// printf("\n");
 
 		// local_p
 
