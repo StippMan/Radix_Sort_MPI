@@ -125,22 +125,107 @@ int radix_counting_sort(array unsorted, uint32_t rank, uint32_t world_size)
 		radix(scratch, unsorted, counting_array, mask, offset);
 
 		MPI_Allgather(counting_array.data, B, MPI_INTEGER, allCounts[rank], B, MPI_INTEGER, MPI_COMM_WORLD);
-
+		
+		// print_array(counting_array);
+		
 		MPI_Barrier(MPI_COMM_WORLD);
-
-		if (rank == 0)
-		{
-			uint32_t *temp_arr = malloc(num_elements * sizeof(uint32_t));
-		}
-
-		for (size_t i = 0; i < rank; i++)
-		{
-			for (size_t j = 0; j < rank; i++)
-			{
-				uint32_t block = malloc(allCounts[j][i] * sizeof(uint32_t));
+		
+		size_t *p_sum = calloc(world_size,sizeof(size_t));
+		for (int i = 0; i < 4; i++){
+			for (int j = 0; j < 4; j++){
+				p_sum[i] = allCounts[j][i];
 			}
 		}
-		MPI_Gather();
+
+		
+		int size_of_to_send = 0;
+		MPI_Request req;
+		MPI_Status stat;
+
+		for (int i = 0; i < world_size; i++)
+		{
+			int start, end;
+
+			if(i == 0){
+				start = 0;
+			}else{
+				start = counting_array.data[i-1];
+			}
+
+			if(i == world_size-1){
+				end = unsorted.count;
+			}else{
+				end = counting_array.data[i];
+			}
+
+			if (i != rank)
+			{
+				uint32_t *to_send = malloc(counting_array.data[i] * sizeof(uint32_t));
+				int c = 0;
+				for (int j = start; j < end; j++)
+				{
+					to_send[c] = scratch.data[j];
+					c++;
+				}
+				
+				MPI_Isend(to_send,counting_array.data[i],MPI_INTEGER,i,rank,MPI_COMM_WORLD,&req);
+				
+			}
+			
+		}
+
+		for (int i = 0; i < world_size; i++)
+		{
+			int start, end;
+
+			if(i == 0){
+				start = 0;
+			}else{
+				start = counting_array.data[i-1];
+			}
+
+			if(i == world_size-1){
+				end = unsorted.count;
+			}else{
+				end = counting_array.data[i];
+			}
+
+			int c = 0;
+			for (int j = start; j < end; j++)
+			{
+				local_p[c] = scratch.data[j];
+				c++;
+			}
+
+
+			if (i != rank)
+			{
+				
+				MPI_Irecv(&local_p[start],counting_array.data[i],MPI_INTEGER,i,i,MPI_COMM_WORLD,&req);
+				
+			}
+
+			// usar allCounts
+			
+		}
+		uint32_t* local_p = malloc(p_sum[rank] * sizeof(uint32_t));
+
+		// local_p
+
+
+		// if (rank == 0)
+		// {
+		// 	uint32_t *temp_arr = malloc(num_elements * sizeof(uint32_t));
+		// }
+
+		// for (size_t i = 0; i < rank; i++)
+		// {
+		// 	for (size_t j = 0; j < rank; i++)
+		// 	{
+		// 		uint32_t *block = malloc(allCounts[j][i] * sizeof(uint32_t));
+		// 	}
+		// }
+		// MPI_Gather();
 
 		array tmp = scratch;
 		scratch = unsorted;
