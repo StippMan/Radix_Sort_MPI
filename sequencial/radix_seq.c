@@ -18,6 +18,9 @@ uint32_t num_elements;
 FILE *input_file;
 char *input_filename = NULL;
 
+struct timeval begin, end;
+long seconds = 0;
+long microseconds = 0;
 typedef struct
 {
     size_t count;
@@ -128,6 +131,8 @@ static int verify_sorted(array sorted)
 
 int main(int argc, char *argv[])
 {
+	gettimeofday(&begin, 0);
+
     int opt;
     while ((opt = getopt(argc, argv, "n:f:")) != -1)
     {
@@ -158,6 +163,11 @@ int main(int argc, char *argv[])
     radix_counting_sort(test_input);
     // verify_sorted(test_input);
     print_array(test_input);
+	gettimeofday(&end, 0);
+	long seconds = end.tv_sec - begin.tv_sec;
+	long microseconds = end.tv_usec - begin.tv_usec;
+	double elapsed = seconds + microseconds*1e-6;
+  	printf("Total time measured: %.3f seconds.\n", elapsed);
 
     return 0;
 }
