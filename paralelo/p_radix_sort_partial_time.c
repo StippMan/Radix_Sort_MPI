@@ -18,8 +18,9 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <time.h>
+#include <sys/time.h>
 #include <math.h>
-#include "timing.h"
+// #include "timing.h"
 
 // global constants definitions
 #define b 32       // number of bits for integer
@@ -31,6 +32,10 @@
 #define COUNTS_TAG_NUM B + 1
 #define PRINT_TAG_NUM COUNTS_TAG_NUM + 1
 #define NUM_TAG PRINT_TAG_NUM + 1
+
+struct timeval begin, end;
+long seconds = 0;
+long microseconds = 0;
 
 // structure encapsulating buckets with arrays of elements
 typedef struct list List;
@@ -183,6 +188,11 @@ int *radix_sort(int *a, List *buckets, const int P, const int rank, int *n)
       }
     }
 
+		gettimeofday(&end, 0);
+		seconds += end.tv_sec - begin.tv_sec;
+		microseconds += end.tv_usec - begin.tv_usec;
+
+
     // do one-to-all transpose
     for (int p = 0; p < P; p++)
     {
@@ -221,6 +231,8 @@ int *radix_sort(int *a, List *buckets, const int P, const int rank, int *n)
         }
       }
     }
+	  gettimeofday(&begin, 0);
+  
 
     // calculate new size based on values received from all processes
     int new_size = 0;
@@ -249,6 +261,10 @@ int *radix_sort(int *a, List *buckets, const int P, const int rank, int *n)
       // reassign pointer back to original
       a = temp;
     }
+		gettimeofday(&end, 0);
+		seconds += end.tv_sec - begin.tv_sec;
+		microseconds += end.tv_usec - begin.tv_usec;
+
 
     // send keys of this process to others
     for (int j = 0; j < B; j++)
@@ -302,7 +318,7 @@ int *radix_sort(int *a, List *buckets, const int P, const int rank, int *n)
         }
       }
     }
-
+	  gettimeofday(&begin, 0);
     // update new size
     *n = new_size;
   }
@@ -402,13 +418,7 @@ int main(int argc, char *argv[])
 
   // let all processes get here
   MPI_Barrier(MPI_COMM_WORLD);
-
-  // take a timestamp before the sort starts
-  timestamp_type time1, time2;
-  if (rank == 0)
-  {
-    get_timestamp(&time1);
-  }
+  gettimeofday(&begin, 0);
 
   // then run the sorting algorithm
   arr = radix_sort(&arr[0], buckets, size, rank, &n);
@@ -422,18 +432,10 @@ int main(int argc, char *argv[])
 
   // wait for all processes to finish before printing results
   MPI_Barrier(MPI_COMM_WORLD);
+  gettimeofday(&end, 0);
+  seconds += end.tv_sec - begin.tv_sec;
+  microseconds += end.tv_usec - begin.tv_usec;
 
-  // take a timestamp after the process finished sorting
-  if (rank == 0)
-  {
-    get_timestamp(&time2);
-
-    // calculate fish updates per second
-    double elapsed = timestamp_diff_in_seconds(time1, time2);
-    printf("%f s\n", elapsed);
-    printf("%d elements sorted\n", n_total);
-    printf("%f elements/s\n", n_total / elapsed);
-  }
 
   // store number of items per each process after the sort
   int *p_n = malloc(size * sizeof(int));
@@ -477,10 +479,10 @@ int main(int argc, char *argv[])
 
   // print results
 
-  if (print_results)
-  {
-    print_array(size, rank, &arr[0], p_n);
-  }
+  // if (print_results)
+  // {
+  //   print_array(size, rank, &arr[0], p_n);
+  // }
 
   MPI_Finalize();
 
@@ -493,5 +495,8 @@ int main(int argc, char *argv[])
   free(arr);
   free(p_n);
 
+  double elapsed = seconds + microseconds*1e-6;
+	if (rank == 0)
+  	printf("Parallel-only time measured: %.3f seconds.\n", elapsed);
   return 0;
 }
