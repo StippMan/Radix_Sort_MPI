@@ -93,7 +93,7 @@ int radix_counting_sort(array unsorted)
         unsorted = tmp;
         mask <<= 0b0100;
         offset += 0b0100;
-        printf("%i\n", CHAR_BIT);
+        // printf("%i\n", CHAR_BIT);
 
     } while (mask);
 
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     array test_input = {num_elements, data};
     radix_counting_sort(test_input);
     // verify_sorted(test_input);
-    print_array(test_input);
+    // print_array(test_input);
 	gettimeofday(&end, 0);
 	long seconds = end.tv_sec - begin.tv_sec;
 	long microseconds = end.tv_usec - begin.tv_usec;

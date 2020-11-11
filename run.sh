@@ -2,27 +2,24 @@
 
 PARALLEL_FILE=./paralelo/full
 SEQUENTIAL_FILE=./sequencial/seq
-INPUT_FILE=data-set
+INPUT_FILE=data-set.in
 
 
 
 run(){
-    for input in  1 2 3 
+    for input in  16777216 67108864 268435456 
         do
             echo "Running sequential algorithm... with = $input elements"
             START=$(date +%s.%N)
-                         inputfile= "${INPUT_FILE}${input}.in"
             for ((i=1;i<=times;i++)); do
-                $SEQUENTIAL_FILE -f inputfile
+                $SEQUENTIAL_FILE -n $input -f $INPUT_FILE
             done
             END=$(date +%s.%N)
             TIME_SEQ=$(python3 -c "print('{:.2f}'.format(${END} - ${START}))")
-            
          echo "Running paralell algorithm with $procs procs... with = $input elements" 
          START=$(date +%s.%N)
-         inputfile= "${INPUT_FILE}${input}.in"
          for ((i=1;i<=times;i++)); do
-            mpiexec -n $procs $PARALLEL_FILE -f $inputfile
+            mpiexec -n $procs $PARALLEL_FILE -n $input -f $INPUT_FILE
          done
          END=$(date +%s.%N)
          TIME_PAR=$(python3 -c "print('{:.2f}'.format(${END} - ${START}))")
